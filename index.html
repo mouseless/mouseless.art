@@ -31,14 +31,13 @@
     </body>
     <script type="module">
       const posts = await (await fetch(`./posts.json?v=${Math.random()}`)).json();
-      let index = posts.length - 1;
 
       const pieceName = document.getElementById("piece-name");
       const exhibitionSpace = document.getElementById("exhibition-space");
       const prevButton = document.getElementById("prev-button");
       const nextButton = document.getElementById("next-button");
 
-      function show() {
+      function show(index) {
         pieceName.innerText = posts[index];
         exhibitionSpace.src = posts[index];
 
@@ -46,16 +45,11 @@
         prevButton.disabled = index >= posts.length - 1;
       }
 
-      prevButton.onclick = () => {
-        index++;
-        show();
-      };
+      let current = posts.length - 1;
 
-      nextButton.onclick = () => {
-        index--;
-        show();
-      };
+      prevButton.onclick = () => show(++current);
+      nextButton.onclick = () => show(--current);
 
-      show();
+      show(current);
     </script>
 </html>
