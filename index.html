@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="https://brand.mouseless.codes/assets/css/default.css">
+    <style>
+      #exhibition-space {
+        border: 0;
+        display: block;
+        width: 100%;
+        height: calc(100vh - 5.5em);
+      }
+      .buttons {
+        display: flex;
+        gap: var(--space-xs);
+      }
+      button {
+        cursor: pointer;
+      }
+      button:disabled {
+        visibility: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <span class="c--fg_gray-0">&gt; <span id="piece-name"></span>_</span>
+    <iframe id="exhibition-space"></iframe>
+    <div class="buttons s--p_xs">
+      <button id="prev-button" class="s--ph_sm c--bg_darkgreen-p3 c--fg_gray-0">&lt;&lt;</button>
+      <button id="next-button" class="s--ph_sm c--bg_darkgreen-p3 c--fg_gray-0">&gt;&gt;</button>
+    </div>
+  </body>
+  <script type="module">
+    const posts = await (await fetch(`./posts.json?v=${Math.random()}`)).json();
+
+    const pieceName = document.getElementById("piece-name");
+    const exhibitionSpace = document.getElementById("exhibition-space");
+    const prevButton = document.getElementById("prev-button");
+    const nextButton = document.getElementById("next-button");
+
+    function show(index) {
+      pieceName.innerText = posts[index];
+      exhibitionSpace.src = posts[index];
+
+      nextButton.disabled = index <= 0;
+      prevButton.disabled = index >= posts.length - 1;
+    }
+
+    let current = posts.length - 1;
+
+    prevButton.onclick = () => show(++current);
+    nextButton.onclick = () => show(--current);
+
+    show(current);
+  </script>
+</html>
