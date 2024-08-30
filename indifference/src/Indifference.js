@@ -1,4 +1,6 @@
-const { Bodies, Composite, Engine, Mouse, MouseConstraint, Render, Runner } = require("matter-js");
+const { Composite, Engine, Events, Mouse, MouseConstraint, Render, Runner } = require("matter-js");
+const Frame = require("./Frame.js");
+const Thorn = require("./Thorn.js");
 
 function Indifference(id) {
   const canvas = document.getElementById(id)
@@ -19,24 +21,46 @@ function Indifference(id) {
     }
   });
   const runner = Runner.create();
+  const mouse = Mouse.create(render.canvas);
+  const mouseConstraint = MouseConstraint.create(engine, {
+    mouse: mouse,
+    constraint: {
+      stiffness: 1,
+      angularStiffness: 1,
+      render: { visible: false }
+    }
+  });
 
-  const aCircle = Bodies.circle(width/2, height/2, 50, { render: { fillStyle: "black" } });
-  Composite.add(engine.world, aCircle);
+  render.mouse = mouse;
+
+  const frame = Frame.new(width, height, 5);
+  const thorns = [
+    Thorn.new(),
+    Thorn.new(),
+    Thorn.new(),
+    Thorn.new(),
+    Thorn.new()
+  ];
+
+  frame.add(engine);
+  for(const thorn of thorns) {
+    thorn.add(engine);
+  }
+
+  Events.on(mouseConstraint, "mousedown", () => {
+    for(const thorn of thorns) {
+      thorn.grow();
+    }
+  });
+
+  Events.on(mouseConstraint, "mouseup", () => {
+    for(const thorn of thorns) {
+      thorn.shrink();
+    }
+  });
 
   function enableMouse() {
-    const mouse = Mouse.create(render.canvas);
-    const mouseConstraint = MouseConstraint.create(engine, {
-      mouse: mouse,
-      constraint: {
-        stiffness: 1,
-        angularStiffness: 1,
-        render: { visible: false }
-      }
-    });
-
     Composite.add(engine.world, mouseConstraint);
-
-    render.mouse = mouse;
   }
 
   function run() {

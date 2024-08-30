@@ -11382,7 +11382,42 @@ var Common = __webpack_require__(0);
 });
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],2:[function(require,module,exports){
-const { Bodies, Composite, Engine, Mouse, MouseConstraint, Render, Runner } = require("matter-js");
+const { Bodies, Composite } = require("matter-js");
+
+/**
+ * @param {Number} width
+ * @param {Number} height
+ * @param {Number} thickness
+ */
+function Frame(width, height, thickness) {
+  const edges = [
+    Bodies.rectangle(width/2, -thickness/2, width, thickness, { isStatic: true }),
+    Bodies.rectangle(-thickness/2, height/2, thickness, height, { isStatic: true }),
+    Bodies.rectangle(width/2, height+thickness/2, width, thickness, { isStatic: true }),
+    Bodies.rectangle(width+thickness/2, height/2, thickness, height, { isStatic: true })
+  ];
+
+  /**
+   * @param {import("matter-js").Engine} engine
+   */
+  function add(engine) {
+    Composite.add(engine.world, edges);
+  }
+
+  return {
+    add
+  };
+}
+
+module.exports = {
+  new: Frame
+};
+
+
+},{"matter-js":1}],3:[function(require,module,exports){
+const { Composite, Engine, Events, Mouse, MouseConstraint, Render, Runner } = require("matter-js");
+const Frame = require("./Frame.js");
+const Thorn = require("./Thorn.js");
 
 function Indifference(id) {
   const canvas = document.getElementById(id)
@@ -11403,24 +11438,46 @@ function Indifference(id) {
     }
   });
   const runner = Runner.create();
+  const mouse = Mouse.create(render.canvas);
+  const mouseConstraint = MouseConstraint.create(engine, {
+    mouse: mouse,
+    constraint: {
+      stiffness: 1,
+      angularStiffness: 1,
+      render: { visible: false }
+    }
+  });
 
-  const aCircle = Bodies.circle(width/2, height/2, 50, { render: { fillStyle: "black" } });
-  Composite.add(engine.world, aCircle);
+  render.mouse = mouse;
+
+  const frame = Frame.new(width, height, 5);
+  const thorns = [
+    Thorn.new(),
+    Thorn.new(),
+    Thorn.new(),
+    Thorn.new(),
+    Thorn.new()
+  ];
+
+  frame.add(engine);
+  for(const thorn of thorns) {
+    thorn.add(engine);
+  }
+
+  Events.on(mouseConstraint, "mousedown", () => {
+    for(const thorn of thorns) {
+      thorn.grow();
+    }
+  });
+
+  Events.on(mouseConstraint, "mouseup", () => {
+    for(const thorn of thorns) {
+      thorn.shrink();
+    }
+  });
 
   function enableMouse() {
-    const mouse = Mouse.create(render.canvas);
-    const mouseConstraint = MouseConstraint.create(engine, {
-      mouse: mouse,
-      constraint: {
-        stiffness: 1,
-        angularStiffness: 1,
-        render: { visible: false }
-      }
-    });
-
     Composite.add(engine.world, mouseConstraint);
-
-    render.mouse = mouse;
   }
 
   function run() {
@@ -11439,7 +11496,7 @@ module.exports = {
 };
 
 
-},{"matter-js":1}],3:[function(require,module,exports){
+},{"./Frame.js":2,"./Thorn.js":5,"matter-js":1}],4:[function(require,module,exports){
 const Indifference = require("./Indifference.js");
 
 const scene = Indifference.new("matter-js");
@@ -11447,4 +11504,48 @@ const scene = Indifference.new("matter-js");
 scene.enableMouse();
 scene.run();
 
-},{"./Indifference.js":2}]},{},[3]);
+},{"./Indifference.js":3}],5:[function(require,module,exports){
+const { Bodies, Body, Composite, Vector } = require("matter-js");
+const { PI, random } = Math;
+
+function Thorn() {
+  const radius = random()*10+5;
+  const triangle = Bodies.polygon(random()*900+10, random()*900+10, 3, radius, { render: { fillStyle: "black" } });
+  const scale = random()*2 + 0.5;
+  Body.rotate(triangle, (random()*2)*PI);
+
+  /**
+   * @param {import("matter-js").Engine} engine
+   */
+  function add(engine) {
+    Composite.add(engine.world, triangle);
+  }
+
+  function grow() {
+    const angle = triangle.angle;
+    Body.translate(triangle, Vector.rotate({ x: -(scale-1)*radius/2, y: 0 }, angle));
+    Body.rotate(triangle, -angle);
+    Body.scale(triangle, scale, 1);
+    Body.rotate(triangle, angle);
+  }
+
+  function shrink() {
+    const angle = triangle.angle;
+    Body.translate(triangle, Vector.rotate({ x: (scale-1)*radius/2, y: 0 }, angle));
+    Body.rotate(triangle, -angle);
+    Body.scale(triangle, 1/scale, 1);
+    Body.rotate(triangle, angle);
+  }
+
+  return {
+    add,
+    grow,
+    shrink
+  };
+}
+
+module.exports = {
+    new: Thorn
+};
+
+},{"matter-js":1}]},{},[4]);
