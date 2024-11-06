@@ -11398,10 +11398,10 @@ function Frame(width, height, thickness) {
   ];
 
   /**
-   * @param {import("matter-js").Engine} engine
+   * @param {import("matter-js").Composite} engine
    */
-  function add(engine) {
-    Composite.add(engine.world, edges);
+  function add(composite) {
+    Composite.add(composite, edges);
   }
 
   return {
@@ -11416,8 +11416,9 @@ module.exports = {
 
 },{"matter-js":1}],3:[function(require,module,exports){
 const { Composite, Engine, Events, Mouse, MouseConstraint, Render, Runner } = require("matter-js");
+const { random } = Math;
 const Frame = require("./Frame.js");
-const Thorn = require("./Thorn.js");
+const Tricle = require("./Tricle.js");
 
 function Indifference(id) {
   const canvas = document.getElementById(id)
@@ -11451,28 +11452,25 @@ function Indifference(id) {
   render.mouse = mouse;
 
   const frame = Frame.new(width, height, 5);
-  const thorns = [
-    Thorn.new(),
-    Thorn.new(),
-    Thorn.new(),
-    Thorn.new(),
-    Thorn.new()
-  ];
+  const tricles = [];
+  for(let i=0; i<10; i++) {
+    tricles.push(Tricle.new(random()*800+50, random()*800+50, random()*50+25));
+  }
 
-  frame.add(engine);
-  for(const thorn of thorns) {
-    thorn.add(engine);
+  frame.add(engine.world);
+  for(const tricle of tricles) {
+    tricle.add(engine.world);
   }
 
   Events.on(mouseConstraint, "mousedown", () => {
-    for(const thorn of thorns) {
-      thorn.grow();
+    for(const tricle of tricles) {
+      tricle.grow();
     }
   });
 
   Events.on(mouseConstraint, "mouseup", () => {
-    for(const thorn of thorns) {
-      thorn.shrink();
+    for(const tricle of tricles) {
+      tricle.shrink();
     }
   });
 
@@ -11496,7 +11494,7 @@ module.exports = {
 };
 
 
-},{"./Frame.js":2,"./Thorn.js":5,"matter-js":1}],4:[function(require,module,exports){
+},{"./Frame.js":2,"./Tricle.js":6,"matter-js":1}],4:[function(require,module,exports){
 const Indifference = require("./Indifference.js");
 
 const scene = Indifference.new("matter-js");
@@ -11505,36 +11503,154 @@ scene.enableMouse();
 scene.run();
 
 },{"./Indifference.js":3}],5:[function(require,module,exports){
-const { Bodies, Body, Composite, Vector } = require("matter-js");
-const { PI, random } = Math;
+const { Bodies, Body, Composite } = require("matter-js");
 
-function Thorn() {
-  const radius = random()*10+5;
-  const triangle = Bodies.polygon(random()*900+10, random()*900+10, 3, radius, { render: { fillStyle: "black" } });
-  const scale = random()*2 + 0.5;
-  Body.rotate(triangle, (random()*2)*PI);
+function Thorn(group, x, y, growScale, length, initialAngle, fillColor, strokeColor) {
+  const body = Bodies.polygon(x, y, 3, length, {
+    friction: 1,
+    collisionFilter: { group },
+    render: { lineWidth: 1, strokeStyle: strokeColor, fillStyle: fillColor }
+  });
+
+  Body.rotate(body, initialAngle);
 
   /**
-   * @param {import("matter-js").Engine} engine
+   * @param {import("matter-js").Composite} engine
    */
-  function add(engine) {
-    Composite.add(engine.world, triangle);
+  function add(composite) {
+    Composite.add(composite, body);
   }
 
   function grow() {
-    const angle = triangle.angle;
-    Body.translate(triangle, Vector.rotate({ x: -(scale-1)*radius/2, y: 0 }, angle));
-    Body.rotate(triangle, -angle);
-    Body.scale(triangle, scale, 1);
-    Body.rotate(triangle, angle);
+    scale(growScale);
   }
 
   function shrink() {
-    const angle = triangle.angle;
-    Body.translate(triangle, Vector.rotate({ x: (scale-1)*radius/2, y: 0 }, angle));
-    Body.rotate(triangle, -angle);
-    Body.scale(triangle, 1/scale, 1);
-    Body.rotate(triangle, angle);
+    scale(1/growScale);
+  }
+
+  function scale(ratio) {
+    const angle = body.angle;
+    Body.rotate(body, -angle);
+    Body.scale(body, ratio, 1);
+    Body.rotate(body, angle);
+  }
+
+  return {
+    body,
+
+    add,
+    grow,
+    shrink
+  };
+}
+
+module.exports = {
+    new: Thorn
+
+};
+
+},{"matter-js":1}],6:[function(require,module,exports){
+const { Bodies, Body, Composite, Constraint, Vector } = require("matter-js");
+const { PI, cos, sin } = Math;
+const Thorn = require("./Thorn.js");
+const xray = false;
+
+function Tricle(x, y, radius) {
+  const strokeColor = "black";
+  const thornCount = 32;
+  const thornLength = 1/3;
+  const thornBaseRatio = 2;
+  const thornStiffness = 0.7;
+
+  const group = Body.nextGroup(true);
+  const tricle = Composite.create({ label: "tricle" });
+  const body = Bodies.circle(x, y, radius, {
+    collisionFilter: { group },
+    render: { lineWidth: 2, strokeStyle: strokeColor }
+  });
+
+  const thorns = [];
+  for(let i=0; i<thornCount; i++) {
+    const angle = (i/thornCount)*2*PI;
+    thorns.push(
+      Thorn.new(
+        group,
+        x-radius*cos(angle),
+        y-radius*sin(angle),
+        thornLength*thornCount/thornBaseRatio,
+        radius/(thornCount/thornBaseRatio),
+        angle,
+        body.render.fillStyle,
+        strokeColor
+      )
+    );
+  }
+
+  for(let i = 0; i<thorns.length; i++) {
+    const thorn = thorns[i];
+
+    // bind one leg of thorn
+    bind(thorn.body, body, thornStiffness,
+      // calculate leg's offset
+      Vector.sub(thorn.body.position, thorn.body.vertices[0]),
+      // calculate offset from center of body towards leg of thorn
+      offset(body.position, thorn.body.vertices[2], radius*1)
+    );
+    // bind other leg of thorn
+    bind(thorn.body, body, thornStiffness,
+      // calculate leg's offset
+      Vector.sub(thorn.body.position, thorn.body.vertices[2]),
+      // calculate offset from center of body towards leg of thorn
+      offset(body.position, thorn.body.vertices[0], radius*1)
+    );
+    // bind center of thorn
+    bind(thorn.body, body, thornStiffness,
+      Vector.sub(thorn.body.vertices[1], thorn.body.position),
+    );
+
+    thorn.add(tricle);
+  }
+  Composite.add(tricle, body);
+
+  function offset(a, b, distance) {
+    const direction = Vector.sub(b, a);
+    const unitDirection = Vector.normalise(direction);
+
+    return Vector.mult(unitDirection, distance);
+  }
+
+  function bind(bodyA, bodyB, stiffness,
+    pointA = null,
+    pointB = null
+  ) {
+    Composite.add(tricle, Constraint.create({
+        bodyA,
+        pointA,
+        bodyB,
+        pointB,
+        stiffness,
+        render: { visible: xray, lineWidth: 1, strokeStyle: "blue" }
+    }));
+  }
+
+  /**
+   * @param {import("matter-js").Composite} engine
+   */
+  function add(composite) {
+    Composite.add(composite, tricle);
+  }
+
+  function grow() {
+    for(const thorn of thorns) {
+      thorn.grow();
+    }
+  }
+
+  function shrink() {
+    for(const thorn of thorns) {
+      thorn.shrink();
+    }
   }
 
   return {
@@ -11545,7 +11661,8 @@ function Thorn() {
 }
 
 module.exports = {
-    new: Thorn
+    new: Tricle
 };
 
-},{"matter-js":1}]},{},[4]);
+
+},{"./Thorn.js":5,"matter-js":1}]},{},[4]);

@@ -1,6 +1,7 @@
 const { Composite, Engine, Events, Mouse, MouseConstraint, Render, Runner } = require("matter-js");
+const { random } = Math;
 const Frame = require("./Frame.js");
-const Thorn = require("./Thorn.js");
+const Tricle = require("./Tricle.js");
 
 function Indifference(id) {
   const canvas = document.getElementById(id)
@@ -34,28 +35,25 @@ function Indifference(id) {
   render.mouse = mouse;
 
   const frame = Frame.new(width, height, 5);
-  const thorns = [
-    Thorn.new(),
-    Thorn.new(),
-    Thorn.new(),
-    Thorn.new(),
-    Thorn.new()
-  ];
+  const tricles = [];
+  for(let i=0; i<10; i++) {
+    tricles.push(Tricle.new(random()*800+50, random()*800+50, random()*50+25));
+  }
 
-  frame.add(engine);
-  for(const thorn of thorns) {
-    thorn.add(engine);
+  frame.add(engine.world);
+  for(const tricle of tricles) {
+    tricle.add(engine.world);
   }
 
   Events.on(mouseConstraint, "mousedown", () => {
-    for(const thorn of thorns) {
-      thorn.grow();
+    for(const tricle of tricles) {
+      tricle.grow();
     }
   });
 
   Events.on(mouseConstraint, "mouseup", () => {
-    for(const thorn of thorns) {
-      thorn.shrink();
+    for(const tricle of tricles) {
+      tricle.shrink();
     }
   });
 

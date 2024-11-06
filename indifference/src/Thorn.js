@@ -1,36 +1,39 @@
-const { Bodies, Body, Composite, Vector } = require("matter-js");
-const { PI, random } = Math;
+const { Bodies, Body, Composite } = require("matter-js");
 
-function Thorn() {
-  const radius = random()*10+5;
-  const triangle = Bodies.polygon(random()*900+10, random()*900+10, 3, radius, { render: { fillStyle: "black" } });
-  const scale = random()*2 + 0.5;
-  Body.rotate(triangle, (random()*2)*PI);
+function Thorn(group, x, y, growScale, length, initialAngle, fillColor, strokeColor) {
+  const body = Bodies.polygon(x, y, 3, length, {
+    friction: 1,
+    collisionFilter: { group },
+    render: { lineWidth: 1, strokeStyle: strokeColor, fillStyle: fillColor }
+  });
+
+  Body.rotate(body, initialAngle);
 
   /**
-   * @param {import("matter-js").Engine} engine
+   * @param {import("matter-js").Composite} engine
    */
-  function add(engine) {
-    Composite.add(engine.world, triangle);
+  function add(composite) {
+    Composite.add(composite, body);
   }
 
   function grow() {
-    const angle = triangle.angle;
-    Body.translate(triangle, Vector.rotate({ x: -(scale-1)*radius/2, y: 0 }, angle));
-    Body.rotate(triangle, -angle);
-    Body.scale(triangle, scale, 1);
-    Body.rotate(triangle, angle);
+    scale(growScale);
   }
 
   function shrink() {
-    const angle = triangle.angle;
-    Body.translate(triangle, Vector.rotate({ x: (scale-1)*radius/2, y: 0 }, angle));
-    Body.rotate(triangle, -angle);
-    Body.scale(triangle, 1/scale, 1);
-    Body.rotate(triangle, angle);
+    scale(1/growScale);
+  }
+
+  function scale(ratio) {
+    const angle = body.angle;
+    Body.rotate(body, -angle);
+    Body.scale(body, ratio, 1);
+    Body.rotate(body, angle);
   }
 
   return {
+    body,
+
     add,
     grow,
     shrink
@@ -39,4 +42,5 @@ function Thorn() {
 
 module.exports = {
     new: Thorn
+
 };

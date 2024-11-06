@@ -14,10 +14,10 @@ function Frame(width, height, thickness) {
   ];
 
   /**
-   * @param {import("matter-js").Engine} engine
+   * @param {import("matter-js").Composite} engine
    */
-  function add(engine) {
-    Composite.add(engine.world, edges);
+  function add(composite) {
+    Composite.add(composite, edges);
   }
 
   return {
