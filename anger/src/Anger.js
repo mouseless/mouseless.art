@@ -1,9 +1,10 @@
 const { Composite, Engine, Events, Mouse, MouseConstraint, Render, Runner } = require("matter-js");
 const { random } = Math;
-const Frame = require("./Frame.js");
 const Tricle = require("./Tricle.js");
 
-function Indifference(id) {
+function Anger(id) {
+  const tricleCount = 10;
+
   const canvas = document.getElementById(id)
   const width = canvas.width;
   const height = canvas.height;
@@ -34,16 +35,23 @@ function Indifference(id) {
 
   render.mouse = mouse;
 
-  const frame = Frame.new(width, height, 5);
   const tricles = [];
-  for(let i=0; i<30; i++) {
-    tricles.push(Tricle.new(random()*800+50, random()*800+50, random()*50+25));
-  }
+  const angryOne = Tricle.new(width/2, height/2, 50);
 
-  frame.add(engine.world);
+  for(let i=0; i<tricleCount; i++) {
+    tricles.push(Tricle.new(random()*800+50, random()*800+50, random()*50+25, angryOne));
+  }
+  tricles.push(angryOne);
+
   for(const tricle of tricles) {
     tricle.add(engine.world);
   }
+
+  Events.on(engine, 'beforeUpdate', function(_) {
+    for(const tricle of tricles) {
+      tricle.act();
+    }
+  });
 
   Events.on(engine, 'collisionStart', function(event) {
     var pairs = event.pairs;
@@ -82,6 +90,6 @@ function Indifference(id) {
 }
 
 module.exports = {
-  new: Indifference
+  new: Anger
 };
 

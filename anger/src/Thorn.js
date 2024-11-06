@@ -1,6 +1,6 @@
 const { Bodies, Body, Composite } = require("matter-js");
 
-function Thorn(group, x, y, growScale, length, initialAngle, fillColor, strokeColor) {
+function Thorn(group, x, y, growScale, maxGrowth, length, initialAngle, fillColor, strokeColor) {
   const body = Bodies.polygon(x, y, 3, length, {
     friction: 1,
     collisionFilter: { group },
@@ -16,11 +16,18 @@ function Thorn(group, x, y, growScale, length, initialAngle, fillColor, strokeCo
     Composite.add(composite, body);
   }
 
+  let growth = 0;
   function grow() {
+    if(growth >= maxGrowth) { return; }
+
+    growth++;
     scale(growScale);
   }
 
   function shrink() {
+    if(growth < 0) { return; }
+
+    growth--;
     scale(1/growScale);
   }
 
