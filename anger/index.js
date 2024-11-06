@@ -11674,7 +11674,7 @@ function Tricle(x, y, radius, angryOne) {
     if(body.speed < 1) {
       var towardsAngryOne = Vector.sub(angryOne.body.position, body.position);
       if(Vector.magnitude(towardsAngryOne) > 200) {
-        Body.applyForce(body, body.position, Vector.mult(Vector.normalise(towardsAngryOne), body.mass/20));
+        Body.applyForce(body, body.position, Vector.mult(Vector.normalise(towardsAngryOne), body.mass/5));
       }
     }
   }
