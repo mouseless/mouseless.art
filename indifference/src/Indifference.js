@@ -36,7 +36,7 @@ function Indifference(id) {
 
   const frame = Frame.new(width, height, 5);
   const tricles = [];
-  for(let i=0; i<10; i++) {
+  for(let i=0; i<30; i++) {
     tricles.push(Tricle.new(random()*800+50, random()*800+50, random()*50+25));
   }
 
@@ -45,15 +45,24 @@ function Indifference(id) {
     tricle.add(engine.world);
   }
 
-  Events.on(mouseConstraint, "mousedown", () => {
-    for(const tricle of tricles) {
-      tricle.grow();
+  Events.on(engine, 'collisionStart', function(event) {
+    var pairs = event.pairs;
+
+    for (var i = 0, j = pairs.length; i != j; ++i) {
+      var pair = pairs[i];
+
+      if (pair.bodyA.isSensor && !pair.bodyB.isSensor && pair.bodyB.tricle) { pair.bodyA.tricle.react(pair.bodyB); }
+      if (pair.bodyB.isSensor && !pair.bodyA.isSensor && pair.bodyA.tricle) { pair.bodyB.tricle.react(pair.bodyA); }
     }
   });
+  Events.on(engine, 'collisionEnd', function(event) {
+    var pairs = event.pairs;
 
-  Events.on(mouseConstraint, "mouseup", () => {
-    for(const tricle of tricles) {
-      tricle.shrink();
+    for (var i = 0, j = pairs.length; i != j; ++i) {
+      var pair = pairs[i];
+
+      if (pair.bodyA.isSensor && !pair.bodyB.isSensor && pair.bodyB.tricle) { pair.bodyA.tricle.react(null); }
+      if (pair.bodyB.isSensor && !pair.bodyA.isSensor && pair.bodyA.tricle) { pair.bodyB.tricle.react(null); }
     }
   });
 

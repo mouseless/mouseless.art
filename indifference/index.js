@@ -11453,7 +11453,7 @@ function Indifference(id) {
 
   const frame = Frame.new(width, height, 5);
   const tricles = [];
-  for(let i=0; i<10; i++) {
+  for(let i=0; i<30; i++) {
     tricles.push(Tricle.new(random()*800+50, random()*800+50, random()*50+25));
   }
 
@@ -11462,15 +11462,24 @@ function Indifference(id) {
     tricle.add(engine.world);
   }
 
-  Events.on(mouseConstraint, "mousedown", () => {
-    for(const tricle of tricles) {
-      tricle.grow();
+  Events.on(engine, 'collisionStart', function(event) {
+    var pairs = event.pairs;
+
+    for (var i = 0, j = pairs.length; i != j; ++i) {
+      var pair = pairs[i];
+
+      if (pair.bodyA.isSensor && !pair.bodyB.isSensor && pair.bodyB.tricle) { pair.bodyA.tricle.react(pair.bodyB); }
+      if (pair.bodyB.isSensor && !pair.bodyA.isSensor && pair.bodyA.tricle) { pair.bodyB.tricle.react(pair.bodyA); }
     }
   });
+  Events.on(engine, 'collisionEnd', function(event) {
+    var pairs = event.pairs;
 
-  Events.on(mouseConstraint, "mouseup", () => {
-    for(const tricle of tricles) {
-      tricle.shrink();
+    for (var i = 0, j = pairs.length; i != j; ++i) {
+      var pair = pairs[i];
+
+      if (pair.bodyA.isSensor && !pair.bodyB.isSensor && pair.bodyB.tricle) { pair.bodyA.tricle.react(null); }
+      if (pair.bodyB.isSensor && !pair.bodyA.isSensor && pair.bodyA.tricle) { pair.bodyB.tricle.react(null); }
     }
   });
 
@@ -11551,7 +11560,7 @@ module.exports = {
 };
 
 },{"matter-js":1}],6:[function(require,module,exports){
-const { Bodies, Body, Composite, Constraint, Vector } = require("matter-js");
+const { Bodies, Body, Composite, Constraint, Events, Vector } = require("matter-js");
 const { PI, cos, sin } = Math;
 const Thorn = require("./Thorn.js");
 const xray = false;
@@ -11559,15 +11568,27 @@ const xray = false;
 function Tricle(x, y, radius) {
   const strokeColor = "black";
   const thornCount = 32;
-  const thornLength = 1/3;
-  const thornBaseRatio = 2;
+  const thornLength = 1/5;
+  const thornBaseRatio = 3;
   const thornStiffness = 0.7;
+  const sensorWidth = 2;
+  const maxGrowth = 3;
 
   const group = Body.nextGroup(true);
   const tricle = Composite.create({ label: "tricle" });
   const body = Bodies.circle(x, y, radius, {
     collisionFilter: { group },
     render: { lineWidth: 2, strokeStyle: strokeColor }
+  });
+  const sensor = Bodies.circle(x, y, radius*sensorWidth, {
+    isSensor: true,
+    isStatic: false,
+    collisionFilter: { group },
+    render: {
+        strokeStyle: "lightgray",
+        fillStyle: 'transparent',
+        lineWidth: 1
+    }
   });
 
   const thorns = [];
@@ -11586,7 +11607,6 @@ function Tricle(x, y, radius) {
       )
     );
   }
-
   for(let i = 0; i<thorns.length; i++) {
     const thorn = thorns[i];
 
@@ -11611,7 +11631,9 @@ function Tricle(x, y, radius) {
 
     thorn.add(tricle);
   }
+  bind(body, sensor, 1.0);
   Composite.add(tricle, body);
+  Composite.add(tricle, sensor);
 
   function offset(a, b, distance) {
     const direction = Vector.sub(b, a);
@@ -11641,23 +11663,44 @@ function Tricle(x, y, radius) {
     Composite.add(composite, tricle);
   }
 
+  let growCount = 0;
   function grow() {
+    if(growCount >= maxGrowth) { return; }
+
+    growCount++;
     for(const thorn of thorns) {
       thorn.grow();
     }
   }
 
   function shrink() {
+    if(growCount <= 0) { return; }
+
+    growCount--;
     for(const thorn of thorns) {
       thorn.shrink();
     }
   }
 
-  return {
+  function react(otherTricle) {
+    if(otherTricle) {
+      setTimeout(grow, 1000);
+    } else {
+      setTimeout(shrink, 1000);
+    }
+  }
+
+  const result = {
     add,
     grow,
-    shrink
+    shrink,
+    react
   };
+
+  body.tricle = result;
+  sensor.tricle = result;
+
+  return result;
 }
 
 module.exports = {
