@@ -2,9 +2,11 @@ const { Composite, Engine, Events, Mouse, MouseConstraint, Render, Runner } = re
 const { random } = Math;
 const Tricle = require("./Tricle.js");
 
-function Anger(id) {
-  const tricleCount = 10;
+const THE_ONE_SIZE = 100;
+const OTHER_COUNT_PER_PERIOD = 3;
+const OTHER_ADD_PERIOD = 5000;
 
+function Aloneness(id) {
   const canvas = document.getElementById(id)
   const width = canvas.width;
   const height = canvas.height;
@@ -36,16 +38,19 @@ function Anger(id) {
   render.mouse = mouse;
 
   const tricles = [];
-  const angryOne = Tricle.new(width/2, height/2, 50);
+  const theOne = Tricle.new(width/2, height/2, THE_ONE_SIZE);
+  theOne.add(engine.world);
 
-  for(let i=0; i<tricleCount; i++) {
-    tricles.push(Tricle.new(random()*800+50, random()*800+50, random()*50+25, angryOne));
+  function addOthers() {
+    for(let i=0; i<OTHER_COUNT_PER_PERIOD; i++) {
+      const newTricle = Tricle.new(random()*800+50, -100, random()*50+25, theOne);
+      tricles.push(newTricle);
+      newTricle.add(engine.world);
+    }
   }
-  tricles.push(angryOne);
 
-  for(const tricle of tricles) {
-    tricle.add(engine.world);
-  }
+  addOthers();
+  setInterval(addOthers, OTHER_ADD_PERIOD);
 
   Events.on(engine, 'beforeUpdate', function(_) {
     for(const tricle of tricles) {
@@ -90,6 +95,6 @@ function Anger(id) {
 }
 
 module.exports = {
-  new: Anger
+  new: Aloneness
 };
 

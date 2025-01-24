@@ -11386,9 +11386,11 @@ const { Composite, Engine, Events, Mouse, MouseConstraint, Render, Runner } = re
 const { random } = Math;
 const Tricle = require("./Tricle.js");
 
-function Anger(id) {
-  const tricleCount = 10;
+const THE_ONE_SIZE = 100;
+const OTHER_COUNT_PER_PERIOD = 3;
+const OTHER_ADD_PERIOD = 5000;
 
+function Aloneness(id) {
   const canvas = document.getElementById(id)
   const width = canvas.width;
   const height = canvas.height;
@@ -11420,16 +11422,19 @@ function Anger(id) {
   render.mouse = mouse;
 
   const tricles = [];
-  const angryOne = Tricle.new(width/2, height/2, 50);
+  const theOne = Tricle.new(width/2, height/2, THE_ONE_SIZE);
+  theOne.add(engine.world);
 
-  for(let i=0; i<tricleCount; i++) {
-    tricles.push(Tricle.new(random()*800+50, random()*800+50, random()*50+25, angryOne));
+  function addOthers() {
+    for(let i=0; i<OTHER_COUNT_PER_PERIOD; i++) {
+      const newTricle = Tricle.new(random()*800+50, -100, random()*50+25, theOne);
+      tricles.push(newTricle);
+      newTricle.add(engine.world);
+    }
   }
-  tricles.push(angryOne);
 
-  for(const tricle of tricles) {
-    tricle.add(engine.world);
-  }
+  addOthers();
+  setInterval(addOthers, OTHER_ADD_PERIOD);
 
   Events.on(engine, 'beforeUpdate', function(_) {
     for(const tricle of tricles) {
@@ -11474,161 +11479,92 @@ function Anger(id) {
 }
 
 module.exports = {
-  new: Anger
+  new: Aloneness
 };
 
 
-},{"./Tricle.js":5,"matter-js":1}],3:[function(require,module,exports){
-const Interest = require("./Interest.js");
+},{"./Tricle.js":4,"matter-js":1}],3:[function(require,module,exports){
+const Aloneness = require("./Aloneness.js");
 
-const scene = Interest.new("matter-js");
+const scene = Aloneness.new("matter-js");
 
 scene.run();
 
-},{"./Interest.js":2}],4:[function(require,module,exports){
-const { Bodies, Body, Composite } = require("matter-js");
-
-function Thorn(group, x, y, growScale, maxGrowth, length, initialAngle, fillColor, strokeColor) {
-  const body = Bodies.polygon(x, y, 3, length, {
-    friction: 1,
-    collisionFilter: { group },
-    render: { lineWidth: 1, strokeStyle: strokeColor, fillStyle: fillColor }
-  });
-
-  Body.rotate(body, initialAngle);
-
-  /**
-   * @param {import("matter-js").Composite} engine
-   */
-  function add(composite) {
-    Composite.add(composite, body);
-  }
-
-  let growth = 0;
-  function grow() {
-    if(growth >= maxGrowth) { return; }
-
-    growth++;
-    scale(growScale);
-  }
-
-  function shrink() {
-    if(growth < 0) { return; }
-
-    growth--;
-    scale(1/growScale);
-  }
-
-  function scale(ratio) {
-    const angle = body.angle;
-    Body.rotate(body, -angle);
-    Body.scale(body, ratio, 1);
-    Body.rotate(body, angle);
-  }
-
-  return {
-    body,
-
-    add,
-    grow,
-    shrink
-  };
-}
-
-module.exports = {
-    new: Thorn
-
-};
-
-},{"matter-js":1}],5:[function(require,module,exports){
+},{"./Aloneness.js":2}],4:[function(require,module,exports){
 const { Bodies, Body, Composite, Constraint, Vector } = require("matter-js");
-const { PI, cos, sin } = Math;
-const Thorn = require("./Thorn.js");
-const xray = false;
 
-function Tricle(x, y, radius, angryOne) {
-  const angry = angryOne === undefined;
-  const strokeColor = "transparent";
-  const thornCount = angry ? 128 : 0;
-  const thornLength = 1/3;
-  const thornBaseRatio = 20;
-  const thornStiffness = 0.8;
-  const sensorWidth = 2;
-  const maxGrowth = 4;
+const XRAY = false;
+const SENSOR_WIDTH = 1.5;
+const SOUL_COLOR = "white";
+const SUBJECT_STROKE_COLOR = "#002fa7";
+const SUBJECT_BODY_COLOR = "#002fa7";
+const OTHER_BODY_COLOR = "#999999";
+const OTHER_ACT_FORCE_RATIO = 0.001;
+const ANIMATION_SCALE_FACTOR = 1.0015;
+const SCALE_FACTOR = 1.4;
+const SOUL_STIFFNESS = 0.1;
+const SOUL_OPACITY = 0.2;
 
-  const group = Body.nextGroup(true);
+const CATEGORY_NONE = 0x0000;
+const CATEGORY_THE_ONE = 0x0001;
+const CATEGORY_OTHER = 0x0002;
+const CATEGORY_SOUL = 0x0004;
+const CATEGORY_SENSOR = 0x0008;
+
+function Tricle(x, y, radius, theOne) {
+  const isTheOne = theOne === undefined;
+
   const tricle = Composite.create({ label: "tricle" });
   const body = Bodies.circle(x, y, radius, {
-    collisionFilter: { group },
-    render: { lineWidth: 2, strokeStyle: strokeColor, fillStyle: angry ? "red": "black" }
-  });
-  const sensor = Bodies.circle(x, y, radius*sensorWidth, {
-    isSensor: true,
-    isStatic: false,
-    collisionFilter: { group },
+    collisionFilter: {
+        group: 0,
+        category: isTheOne ? CATEGORY_THE_ONE : CATEGORY_OTHER,
+        mask: isTheOne
+            ? CATEGORY_SENSOR | CATEGORY_OTHER
+            : CATEGORY_SENSOR | CATEGORY_THE_ONE
+    },
+    restitution: 0,
     render: {
-        strokeStyle: "transparent",
-        fillStyle: 'transparent',
-        lineWidth: 1
+      lineWidth: isTheOne ? 3 : 0,
+      strokeStyle: isTheOne ? SUBJECT_STROKE_COLOR : "transparent",
+      fillStyle: isTheOne ? SUBJECT_BODY_COLOR : OTHER_BODY_COLOR
     }
   });
 
-  const thorns = [];
-  for(let i=0; i<thornCount; i++) {
-    const angle = (i/thornCount)*2*PI;
-    thorns.push(
-      Thorn.new(
-        group,
-        x-radius*cos(angle),
-        y-radius*sin(angle),
-        thornLength*thornCount/thornBaseRatio,
-        maxGrowth,
-        radius/(thornCount/thornBaseRatio),
-        angle,
-        body.render.fillStyle,
-        strokeColor
-      )
-    );
+  let soul;
+  if(isTheOne) {
+    soul = Bodies.circle(x, y, radius, {
+      collisionFilter: {
+        group: 0,
+        category: CATEGORY_SOUL,
+        mask: CATEGORY_NONE
+      },
+      render: {
+        fillStyle: SOUL_COLOR,
+        opacity: SOUL_OPACITY
+      }
+    });
   }
 
-  Composite.add(tricle, sensor);
-  for(let i = 0; i<thorns.length; i++) {
-    const thorn = thorns[i];
+  const sensor = Bodies.circle(x, y, radius * SENSOR_WIDTH, {
+    isSensor: true,
+    collisionFilter: {
+      group: 0,
+      category: CATEGORY_SENSOR,
+      mask: CATEGORY_OTHER | CATEGORY_THE_ONE
+    },
+    render: {
+      strokeStyle: "green",
+      fillStyle: 'transparent',
+      lineWidth: 1,
+      visible: XRAY
+    }
+  });
 
-    // bind one leg of thorn
-    bind(thorn.body, body, thornStiffness,
-      // calculate leg's offset
-      Vector.sub(thorn.body.position, thorn.body.vertices[0]),
-      // calculate offset from center of body towards leg of thorn
-      offset(body.position, thorn.body.vertices[2], radius*1)
-    );
-    // bind other leg of thorn
-    bind(thorn.body, body, thornStiffness,
-      // calculate leg's offset
-      Vector.sub(thorn.body.position, thorn.body.vertices[2]),
-      // calculate offset from center of body towards leg of thorn
-      offset(body.position, thorn.body.vertices[0], radius*1)
-    );
-    // bind center of thorn
-    bind(thorn.body, body, thornStiffness,
-      Vector.sub(thorn.body.vertices[1], thorn.body.position),
-    );
-
-    thorn.add(tricle);
-  }
   bind(body, sensor, 1.0);
 
-  if(angry) {
+  if(isTheOne) {
     bind(body, null, 1, null, Vector.create(x, y));
-  }
-
-  Composite.add(tricle, body);
-
-  function offset(a, b, distance) {
-    const direction = Vector.sub(b, a);
-    const unitDirection = Vector.normalise(direction);
-
-    return Vector.mult(unitDirection, distance);
   }
 
   function bind(bodyA, bodyB, stiffness,
@@ -11636,12 +11572,12 @@ function Tricle(x, y, radius, angryOne) {
     pointB = null
   ) {
     Composite.add(tricle, Constraint.create({
-        bodyA,
-        pointA,
-        bodyB,
-        pointB,
-        stiffness,
-        render: { visible: xray, lineWidth: 1, strokeStyle: "blue" }
+      bodyA,
+      pointA,
+      bodyB,
+      pointB,
+      stiffness,
+      render: { visible: XRAY, lineWidth: 1, strokeStyle: "blue" }
     }));
   }
 
@@ -11650,42 +11586,63 @@ function Tricle(x, y, radius, angryOne) {
    */
   function add(composite) {
     Composite.add(composite, tricle);
-  }
+    Composite.add(tricle, body);
+    Composite.add(tricle, sensor);
 
-  function grow() {
-    for(const thorn of thorns) {
-      if(Math.random() > 0.5) { continue; }
-
-      thorn.grow();
+    if(isTheOne) {
+      bind(soul, body, SOUL_STIFFNESS);
+      Composite.add(tricle, soul);
     }
   }
 
-  function shrink() {
-    for(const thorn of thorns) {
-      if(Math.random() > 0.5) { continue; }
+  function growSoul() {
+    scale(SCALE_FACTOR);
+  }
 
-      thorn.shrink();
-    }
+  function shrinkSoul() {
+    scale(1/SCALE_FACTOR);
+  }
+
+  let targetScale = SCALE_FACTOR;
+  let currentScale = 1;
+
+  function scale(value) {
+    targetScale = targetScale * value;
+  }
+
+  if(soul) {
+    scaleAnimation();
+  }
+
+  function scaleAnimation() {
+    const stepScale =
+      currentScale - targetScale < -0.001 ? ANIMATION_SCALE_FACTOR :
+      currentScale - targetScale > 0.001 ? 1 / ANIMATION_SCALE_FACTOR :
+      1
+    ;
+
+    Body.scale(soul, stepScale, stepScale);
+    currentScale *= stepScale;
+    requestAnimationFrame(scaleAnimation);
   }
 
   function act() {
-    if(angry) { return; }
+    if(isTheOne) { return; }
 
     if(body.speed < 1) {
-      var towardsAngryOne = Vector.sub(angryOne.body.position, body.position);
-      if(Vector.magnitude(towardsAngryOne) > 200) {
-        Body.applyForce(body, body.position, Vector.mult(Vector.normalise(towardsAngryOne), body.mass/5));
-      }
+      var downwards = { x: 0, y: 1 };
+      var force = Vector.mult(Vector.normalise(downwards), body.mass * OTHER_ACT_FORCE_RATIO);
+      Body.applyForce(body, body.position, force);
     }
   }
 
   function react(otherTricle) {
-    if(!angry) { return; }
+    if(!isTheOne) { return; }
 
     if(otherTricle) {
-      grow();
+      shrinkSoul();
     } else {
-      shrink();
+      growSoul();
     }
   }
 
@@ -11693,8 +11650,6 @@ function Tricle(x, y, radius, angryOne) {
     body,
 
     add,
-    grow,
-    shrink,
     act,
     react
   };
@@ -11710,4 +11665,4 @@ module.exports = {
 };
 
 
-},{"./Thorn.js":4,"matter-js":1}]},{},[3]);
+},{"matter-js":1}]},{},[3]);
