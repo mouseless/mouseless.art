@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      :root {
+        --max-height: 80vh;
+        --max-width: 80vw;
+        --length: min(var(--max-height), var(--max-width));
+      }
+
+      body { background-color: black; }
+
+      .frame {
+        background-color: white;
+        border: solid 1px black;
+        box-shadow: inset 0px 0px 213px 115px #4b4b4b;
+      }
+
+      .center {
+        position: fixed;
+        top: calc(50% - var(--length) / 2);
+        left: calc(50% - var(--length) / 2);
+      }
+
+      .square {
+        width: var(--length);
+        height: var(--length);
+      }
+    </style>
+    <script defer src="index.js"></script>
+  </head>
+  <body>
+    <div class="frame center square">
+      <canvas id="matter-js" class="square" width="1000" height="1000"></canvas>
+    </div>
+  </body>
+</html>
