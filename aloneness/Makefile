@@ -3,4 +3,4 @@
 build:
 	@ npm run build
 run:
-	@ npm start
+	@ npm dev
