@@ -6,8 +6,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "matter-js": "^0.20.0",
-    "vue": "^3.4.38"
+    "matter-js": "^0.20.0"
   },
   "devDependencies": {
     "vite": "^6.1.0"
