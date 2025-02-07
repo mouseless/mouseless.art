@@ -1,4 +1,4 @@
-const Anger = require("./Anger.js");
+import Anger from "./Anger.js";
 
 const scene = Anger.new("matter-js");
 

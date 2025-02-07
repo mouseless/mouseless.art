@@ -1,4 +1,4 @@
-const { Bodies, Body, Composite, Constraint, Vector } = require("matter-js");
+import { Bodies, Body, Composite, Constraint, Vector } from "matter-js";
 
 const XRAY = false;
 const SENSOR_WIDTH = 1.5;
@@ -167,7 +167,7 @@ function Tricle(x, y, radius, theOne) {
   return result;
 }
 
-module.exports = {
+export default {
     new: Tricle
 };
 

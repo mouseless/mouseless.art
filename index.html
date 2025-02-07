@@ -39,7 +39,7 @@
 
     function show(index) {
       pieceName.innerText = posts[index];
-      exhibitionSpace.src = `${posts[index]}/?v=${Math.random()}`;
+      exhibitionSpace.src = `${posts[index]}/dist/index.html?v=${Math.random()}`;
 
       nextButton.disabled = index <= 0;
       prevButton.disabled = index >= posts.length - 1;

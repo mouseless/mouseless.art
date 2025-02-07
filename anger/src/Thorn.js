@@ -1,4 +1,4 @@
-const { Bodies, Body, Composite } = require("matter-js");
+import { Bodies, Body, Composite } from "matter-js";
 
 function Thorn(group, x, y, growScale, maxGrowth, length, initialAngle, fillColor, strokeColor) {
   const body = Bodies.polygon(x, y, 3, length, {
@@ -47,7 +47,6 @@ function Thorn(group, x, y, growScale, maxGrowth, length, initialAngle, fillColo
   };
 }
 
-module.exports = {
+export default {
     new: Thorn
-
 };

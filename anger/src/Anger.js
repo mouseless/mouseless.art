@@ -1,6 +1,7 @@
-const { Composite, Engine, Events, Mouse, MouseConstraint, Render, Runner } = require("matter-js");
+import { Composite, Engine, Events, Mouse, MouseConstraint, Render, Runner } from "matter-js";
+import Tricle from "./Tricle.js";
+
 const { random } = Math;
-const Tricle = require("./Tricle.js");
 
 function Anger(id) {
   const tricleCount = 10;
@@ -89,7 +90,7 @@ function Anger(id) {
   };
 }
 
-module.exports = {
+export default {
   new: Anger
 };
 
