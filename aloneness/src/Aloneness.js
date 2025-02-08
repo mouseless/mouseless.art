@@ -1,6 +1,5 @@
-const { Composite, Engine, Events, Mouse, MouseConstraint, Render, Runner } = require("matter-js");
-const { random } = Math;
-const Tricle = require("./Tricle.js");
+import { Composite, Engine, Events, Mouse, MouseConstraint, Render, Runner } from "matter-js";
+import Tricle from "./Tricle.js";
 
 const THE_ONE_SIZE = 100;
 const OTHER_COUNT_PER_PERIOD = 3;
@@ -43,7 +42,7 @@ function Aloneness(id) {
 
   function addOthers() {
     for(let i=0; i<OTHER_COUNT_PER_PERIOD; i++) {
-      const newTricle = Tricle.new(random()*800+50, -100, random()*50+25, theOne);
+      const newTricle = Tricle.new(Math.random()*800+50, -100, Math.random()*50+25, theOne);
       tricles.push(newTricle);
       newTricle.add(engine.world);
     }
@@ -94,7 +93,7 @@ function Aloneness(id) {
   };
 }
 
-module.exports = {
+export default {
   new: Aloneness
 };
 

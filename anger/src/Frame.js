@@ -1,4 +1,4 @@
-const { Bodies, Composite } = require("matter-js");
+import { Bodies, Composite } from "matter-js";
 
 /**
  * @param {Number} width
@@ -25,7 +25,7 @@ function Frame(width, height, thickness) {
   };
 }
 
-module.exports = {
+export default {
   new: Frame
 };
 

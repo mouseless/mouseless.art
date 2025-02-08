@@ -1,6 +1,7 @@
-const { Bodies, Body, Composite, Constraint, Vector } = require("matter-js");
+import { Bodies, Body, Composite, Constraint, Vector } from "matter-js";
+import Thorn from "./Thorn.js";
+
 const { PI, cos, sin } = Math;
-const Thorn = require("./Thorn.js");
 const xray = false;
 
 function Tricle(x, y, radius, angryOne) {
@@ -162,7 +163,7 @@ function Tricle(x, y, radius, angryOne) {
   return result;
 }
 
-module.exports = {
+export default {
     new: Tricle
 };
 
