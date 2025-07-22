@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="https://brand.mouseless.codes/assets/css/default.css">
+    <style>
+      #exhibition-space {
+        border: 0;
+        display: block;
+        width: 100%;
+        height: calc(100vh - 5.5em);
+      }
+      .buttons {
+        display: flex;
+        gap: var(--space-xs);
+      }
+      button {
+        cursor: pointer;
+      }
+      button:disabled {
+        visibility: hidden;
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-IGlwbrbV.js"></script>
+  </head>
+  <body>
+    <span class="c--fg_gray-0">&gt; <span id="piece-name"></span>_</span>
+    <iframe id="exhibition-space"></iframe>
+    <div class="buttons s--p_xs">
+      <button id="prev-button" class="s--ph_sm c--bg_darkgreen-p3 c--fg_gray-0">&lt;&lt;</button>
+      <button id="next-button" class="s--ph_sm c--bg_darkgreen-p3 c--fg_gray-0">&gt;&gt;</button>
+    </div>
+  </body>
+</html>
